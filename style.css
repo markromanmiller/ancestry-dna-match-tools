@@ -30,3 +30,9 @@
 .angeldots-tag.lod img {
     filter: invert(1);
 }
+
+.angeldots input {
+    max-width: 200px;
+    max-height: 30px;
+    margin: -5px 5px;
+}
