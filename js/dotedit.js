@@ -26,7 +26,7 @@ const assignments = {
 const tags = {
 	0 : {
 		"name" : "Test tag 01",
-		"shortName" : "",
+		"shortName" : "FFF",
 		"color" : "#ffaef1"
 	},
 	1 : {
@@ -46,7 +46,10 @@ function makeTagHTML(tagInfo) {
 	}
 	ele.title = tagInfo["name"];
 	ele.style.backgroundColor = tagInfo["color"];
-	ele.style.color = textColor(tagInfo["color"]);
+	if (relativeLuminanceW3C(tagInfo["color"]) < 0.5) {
+		ele.classList.add("lod");
+	}
+	// ele.style.color = textColor(tagInfo["color"]);
 	return ele;
 }
 
@@ -90,7 +93,17 @@ function constructEditTagsButton() {
 	editTagsButton.onclick = function () {
 		// get all tags, and add in x-marks to them
 		let siblings = this.parentElement.children;
+
+		for (let i = 0; i < this.children.length; i++) {
+			let val = this.children[i];
+			if (val.tagName.toLowerCase() === "img") {
+				val.src = chrome.runtime.getURL("img/check.svg");
+				val.alt = "Save Tags";
+			}
+		}
+
 		for (let i = 0; i < siblings.length; i++) {
+
 			if (siblings[i].classList.contains("angeldots-tag")) {
 				const removeTagButton = document.createElement("button");
 				removeTagButton.classList.add("angeldots-removeTagButton");

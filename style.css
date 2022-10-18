@@ -20,4 +20,13 @@
     border-radius: 15px;
     min-width: 20px;
     min-height: 20px;
+    color: #0f0f0f;
+}
+
+.angeldots-tag.lod {
+    color: #f0f0f0;
+}
+
+.angeldots-tag.lod img {
+    filter: invert(1);
 }
