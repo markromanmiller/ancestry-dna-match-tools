@@ -80,10 +80,35 @@ chrome.storage.sync.get(['key'], function(result) {
 	console.log('Value currently is ' + result.key);
 });*/
 
+function constructEditTagsButton() {
+	const editTagsButton = document.createElement("button");
+	editTagsButton.classList.add("angeldots-editTagsButton");
+	editTagsButton.innerHTML = "<img src='" +
+		chrome.runtime.getURL("img/wing.svg") +
+		"' alt='Edit Tags'/>";
+
+	editTagsButton.onclick = function () {
+		// get all tags, and add in x-marks to them
+		let siblings = this.parentElement.children;
+		for (let i = 0; i < siblings.length; i++) {
+			if (siblings[i].classList.contains("angeldots-tag")) {
+				const removeTagButton = document.createElement("button");
+				removeTagButton.classList.add("angeldots-removeTagButton");
+				removeTagButton.innerHTML = "<img src='" +
+					chrome.runtime.getURL("img/close.svg") +
+					"' alt='Remove Tag'/>";
+				siblings[i].append(removeTagButton);
+			}
+		}
+	};
+	return editTagsButton;
+}
+
 function constructTagContainer(match32) {
 	let tagContainer = document.createElement("div");
 	// element.classList.add("mystyle");
 	tagContainer.classList.add("angeldots");
+	tagContainer.append(constructEditTagsButton());
 	let matchTagSpans = constructMatchTags(match32);
 	tagContainer.append(...matchTagSpans);
 	return tagContainer;
