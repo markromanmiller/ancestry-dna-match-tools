@@ -10,7 +10,7 @@
   "content_scripts": [
     {
       "matches": ["https://www.ancestry.com/discoveryui-matches/*"],
-      "js": ["js/dotedit.js"],
+      "js": ["js/colors.js", "js/ancestry.js", "js/dotedit.js"],
       "css": ["style.css"]
     }
   ],

@@ -1,7 +1,7 @@
 
 // given a match32 string, pull out the relevant tags:
 
-import textColor from "./colors";
+// import textColor from "./colors";
 
 /**
  * tag database structure:
@@ -47,17 +47,14 @@ function makeTagHTML(tagInfo) {
 	ele.title = tagInfo["name"];
 	ele.style.backgroundColor = tagInfo["color"];
 	ele.style.color = textColor(tagInfo["color"]);
-	//}
 	return ele;
 }
 
-function pullMatchTags(match32) {
-	// console.log("Calling with: " + match32);
+function constructMatchTags(match32) {
 	let tagElements = [];
 	if (match32 in assignments) {
 		tagElements = assignments[match32].map(function(value) {return makeTagHTML(tags[value])});
 	}
-	// console.log(tagElements.length);
 	return tagElements;
 }
 
@@ -83,31 +80,34 @@ chrome.storage.sync.get(['key'], function(result) {
 	console.log('Value currently is ' + result.key);
 });*/
 
+function constructTagContainer(match32) {
+	let tagContainer = document.createElement("div");
+	// element.classList.add("mystyle");
+	tagContainer.classList.add("angeldots");
+	let matchTagSpans = constructMatchTags(match32);
+	tagContainer.append(...matchTagSpans);
+	return tagContainer;
+}
+
+function ensureTagContainer(target) {
+	if (doesNeedTagContainer(target) && !(target.classList.contains("angeldots-hasTagContainer"))) {
+		target.classList.add("angeldots-hasTagContainer");
+		let ele = constructTagContainer(getMatchID(target));
+		target.append(ele);
+		// now the question is, how can one create, assign and edit the tags?
+	}
+}
 
 let observer = new MutationObserver(function(mutations) {
 	mutations.forEach(function(mutation) {
-
 		switch(mutation.type) {
 			case "attributes":
-				let target = mutation.target;
-				let classes = target.classList;
-				if (classes.contains("matchGrid") && !(classes.contains("angeldots-matchGrid"))) {
-					classes.add("angeldots-matchGrid");
-					let ele = document.createElement("div");
-					// element.classList.add("mystyle");
-					ele.classList.add("angeldots");
-					let matchTags = pullMatchTags(target.id.slice(-32));
-					ele.append(...matchTags);
-					target.append(ele);
-					// now the question is, how can one create, assign and edit the tags?
-				}
-				break;
+				ensureTagContainer(mutation.target);
 		}
 	})
-	//console.log(matchDict);
 });
+
 observer.observe(document.documentElement, {subtree: true, attributes: true, attributeFilter: ["class"]});
-//console.log(insertedNodes);
 
 
 
