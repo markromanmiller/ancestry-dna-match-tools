@@ -16,11 +16,6 @@
  * }
  */
 
-const assignments = {
-	"177325bb661c43a5a33d3104eb57ad1d" : [0],
-	"f61f9c955fee4a8eab2cd571319e0df6" : [1, 0]
-};
-
 const tags = {
 	0 : {
 		"name" : "Test tag 01",
@@ -38,13 +33,67 @@ function getTags() {
 	return tags;
 }
 
-function getAssignments() {
-	return assignments;
+const initialSyncStorage = {
+	"director": {
+		"assignments": [
+			"assignments0"
+		]
+	},
+	"assignments0" : {}
 }
 
+async function initializeChromeSyncStorage() {
+	await chrome.storage.sync.set(initialSyncStorage);
+}
+
+
+// In-page cache of the assignments dictionary
+let assignments;
+let syncData;
+let idsToAssignmentSlot = {};
+
+// function to call when page loads to pull chrome sync storage stuff (i'll need all of it basically)
+function loadChromeSyncStorage() {
+	chrome.storage.sync.get(null, function(items) {
+		if (!("director" in items)) {
+			initializeChromeSyncStorage();
+			syncData = initialSyncStorage;
+		} else {
+			syncData = items;
+		}
+		constructAssignments();
+	})
+}
+
+function constructAssignments() {
+	let newAssignments = {};
+	// let idsToAssignmentSlot = {};
+	for (let i = 0; i < syncData.director.assignments.length; i++) {
+		Object.assign(newAssignments, syncData[syncData.director.assignments[i]]);
+	}
+	assignments = newAssignments;
+}
+
+
+// Watch for changes to the user's options & apply them
+chrome.storage.onChanged.addListener((changes, area) => {
+	if (area === 'sync') {
+		for (let key in changes) {
+			syncData[key] = changes[key].newValue;
+		}
+		constructAssignments();
+	}
+});
+
 function updateAssignments(id, tagIDs) {
-	assignments[id] = tagIDs;
-	console.log(assignments);
+	// assignments[id] = tagIDs;
+	// by default, use assignment0
+
+	let newAssignment0 = syncData["assignments0"];
+	newAssignment0[id] = tagIDs;
+
+	// do some unsaved data thing...
+	chrome.storage.sync.set({"assignments0" : newAssignment0});
 }
 
 function constructTagElement(tagID) {
@@ -68,8 +117,8 @@ function constructTagElement(tagID) {
 
 function constructMatchTags(match32) {
 	let tagElements = [];
-	if (match32 in getAssignments()) {
-		tagElements = getAssignments()[match32].map(function(value) {return constructTagElement(value)});
+	if (match32 in assignments) {
+		tagElements = assignments[match32].map(function(value) {return constructTagElement(value)});
 	}
 	return tagElements;
 }
@@ -89,13 +138,11 @@ function constructMatchTags(match32) {
  *   b) have dropdowns be from tags
  *   c) add tag info once selected
  * 7) save tag assignment to JSON
+ * 8) save tag assignment to chrome.sync
  *
  * DONE up to here.
  *
- * 8) save tag assignment to chrome.sync
- * 9) refactor tag assignment:
- *   a) break down into smaller functions
- *   b) filter out already-assigned tags
+ * 9) refactor tag assignment
  *
  * tags
  * 1) display tag info (n matches, name, short name, color)
@@ -105,6 +152,7 @@ function constructMatchTags(match32) {
  * 5) handle tag errors
  *   a) too much storage error
  *   b) duplicate tag names error
+ *   c) filter out already-assigned tags
  *
  * features
  * 1) hide ancestry tags?
@@ -114,15 +162,6 @@ function constructMatchTags(match32) {
 // bad table for name, edit name, color, etc, and save button at the top?
 
 // with a button, open chrome.runtime.openOptionsPage
-
-/*
-chrome.storage.sync.set({key: value}, function() {
-	console.log('Value is set to ' + value);
-});
-
-chrome.storage.sync.get(['key'], function(result) {
-	console.log('Value currently is ' + result.key);
-});*/
 
 function makeTagOption(tagInfo) {
 	let result = tagInfo["name"];
@@ -199,11 +238,6 @@ function constructEditTagsButton() {
 			addInput.setAttribute('list', "angeldots-datalist");
 			addInput.classList.add("angeldots-addInput");
 			addInput.onchange = function(val) {
-				// check whether it's a valid entry (use a JSON thing?)
-				console.log("onchange");
-
-				// is it a valid entry (check if it's empty, check if it matches any tags
-				console.log(val);
 
 				const tags = getTags();
 				const tagsKeys = Object.keys(tags);
@@ -267,8 +301,6 @@ function constructEditTagsButton() {
 
 			// save the data
 			// TODO: redo the parentElement.parentElement link into ancestry.js
-			console.log(getMatchID(this.parentElement.parentElement));
-			console.log(acceptedTagIDs);
 			updateAssignments(getMatchID(this.parentElement.parentElement), acceptedTagIDs);
 		}
 	};
@@ -277,7 +309,6 @@ function constructEditTagsButton() {
 
 function constructTagContainer(match32) {
 	let tagContainer = document.createElement("div");
-	// element.classList.add("mystyle");
 	tagContainer.classList.add("angeldots");
 	tagContainer.append(constructEditTagsButton());
 	let matchTagSpans = constructMatchTags(match32);
@@ -290,7 +321,6 @@ function ensureTagContainer(target) {
 		target.classList.add("angeldots-hasTagContainer");
 		let ele = constructTagContainer(getMatchID(target));
 		target.append(ele);
-		// now the question is, how can one create, assign and edit the tags?
 	}
 }
 
@@ -303,7 +333,9 @@ let observer = new MutationObserver(function(mutations) {
 	})
 });
 
-observer.observe(document.documentElement, {subtree: true, attributes: true, attributeFilter: ["class"]});
+// initializeChromeSyncStorage();
+loadChromeSyncStorage();
 
+observer.observe(document.documentElement, {subtree: true, attributes: true, attributeFilter: ["class"]});
 
 
