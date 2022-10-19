@@ -34,6 +34,14 @@ const tags = {
 	}
 };
 
+function getTags() {
+	return tags;
+}
+
+function getAssignments() {
+	return assignments;
+}
+
 function makeTagHTML(tagInfo) {
 	let ele = document.createElement("span");
 	ele.classList.add("angeldots-tag");
@@ -53,8 +61,8 @@ function makeTagHTML(tagInfo) {
 
 function constructMatchTags(match32) {
 	let tagElements = [];
-	if (match32 in assignments) {
-		tagElements = assignments[match32].map(function(value) {return makeTagHTML(tags[value])});
+	if (match32 in getAssignments()) {
+		tagElements = getAssignments()[match32].map(function(value) {return makeTagHTML(getTags()[value])});
 	}
 	return tagElements;
 }
@@ -71,10 +79,10 @@ function constructMatchTags(match32) {
  * 5) remove tag assignment
  * 6) add tag assignment
  *   a) DONE - Add input with dropdown / autocomplete
+ *   b) have dropdowns be from tags
  *
  *   DONE up to here.
  *
- *   b) have dropdowns be from tags
  *   c) add tag info once selected
  * 7) save tag assignment to JSON
  * 8) save tag assignment to chrome.sync
@@ -111,6 +119,31 @@ chrome.storage.sync.get(['key'], function(result) {
 	console.log('Value currently is ' + result.key);
 });*/
 
+function makeTagOption(tagInfo) {
+	let result = tagInfo["name"];
+	if (tagInfo["shortName"]) {
+		result += " (" + tagInfo["shortName"] + ")";
+	}
+	return result;
+}
+
+function constructDatalist() {
+
+	let dl = document.createElement("datalist");
+	dl.classList.add("angeldots-datalist");
+	dl.id = "angeldots-datalist";
+
+	const tags = getTags();
+	const opts = Object.keys(tags).map(val => {
+		const opt = document.createElement("option");
+		opt.value = makeTagOption(tags[val]);
+		return opt;
+	});
+	dl.append(...opts);
+
+	return dl;
+}
+
 function constructEditTagsButton() {
 	const editTagsButton = document.createElement("button");
 	editTagsButton.classList.add("angeldots-editTagsButton");
@@ -138,23 +171,12 @@ function constructEditTagsButton() {
 			}
 
 			// place a form fill right after it
-			let addDatalist = document.createElement("datalist");
-			addDatalist.classList.add("angeldots-addDatalist");
-			addDatalist.id = "browsers";
-			addDatalist.innerHTML = "  <option value=\"Chrome\"></option>\n" +
-				"  <option value=\"Firefox\"></option>\n" +
-				"  <option value=\"Internet Explorer\"></option>\n" +
-				"  <option value=\"Opera\"></option>\n" +
-				"  <option value=\"Safari\"></option>\n" +
-				"  <option value=\"Microsoft Edge\"></option>\n";
 
-			this.after(addDatalist);
+			this.after(constructDatalist());
 
 			let addInput = document.createElement("input");
-			addInput.setAttribute('list', addDatalist.id);
+			addInput.setAttribute('list', "angeldots-datalist");
 			addInput.classList.add("angeldots-addInput");
-			addInput.id = "foobar";
-			addInput.name = "foobar2";
 			addInput.onchange = function() {
 				// check whether it's a valid entry (use a JSON thing?)
 				console.log("onchange");
