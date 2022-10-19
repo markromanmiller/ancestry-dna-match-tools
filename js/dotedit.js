@@ -86,7 +86,9 @@ function constructMatchTags(match32) {
  *   c) add tag info once selected
  * 7) save tag assignment to JSON
  * 8) save tag assignment to chrome.sync
- * 9) refactor tag assignment
+ * 9) refactor tag assignment:
+ *   a) break down into smaller functions
+ *   b) filter out already-assigned tags
  *
  * tags
  * 1) display tag info (n matches, name, short name, color)
@@ -94,21 +96,17 @@ function constructMatchTags(match32) {
  * 3) make new tag
  * 4) delete old tags
  * 5) handle tag errors
+ *   a) too much storage error
+ *   b) duplicate tag names error
  *
  * features
  * 1) hide ancestry tags?
  * 2) hide some angel tags?
  */
 
-// wing shows ad tags
-
 // bad table for name, edit name, color, etc, and save button at the top?
 
-// options page bad stuff.
-
 // with a button, open chrome.runtime.openOptionsPage
-
-// color html unit
 
 /*
 chrome.storage.sync.set({key: value}, function() {
@@ -129,6 +127,8 @@ function makeTagOption(tagInfo) {
 
 function constructDatalist() {
 
+	// TODO: filter out already-assigned tags
+
 	let dl = document.createElement("datalist");
 	dl.classList.add("angeldots-datalist");
 	dl.id = "angeldots-datalist";
@@ -142,6 +142,19 @@ function constructDatalist() {
 	dl.append(...opts);
 
 	return dl;
+}
+
+function constructRemoveTagButton() {
+	const removeTagButton = document.createElement("button");
+	removeTagButton.classList.add("angeldots-removeTagButton");
+	removeTagButton.innerHTML = "<img src='" +
+		chrome.runtime.getURL("img/close.svg") +
+		"' alt='Remove Tag'/>";
+	removeTagButton.onclick = function () {
+		// TODO: also update the corresponding datalist object
+		this.parentElement.remove();
+	}
+	return removeTagButton;
 }
 
 function constructEditTagsButton() {
@@ -177,12 +190,30 @@ function constructEditTagsButton() {
 			let addInput = document.createElement("input");
 			addInput.setAttribute('list', "angeldots-datalist");
 			addInput.classList.add("angeldots-addInput");
-			addInput.onchange = function() {
+			addInput.onchange = function(val) {
 				// check whether it's a valid entry (use a JSON thing?)
 				console.log("onchange");
-			}
-			addInput.oninput = function() {
-				console.log("oninput");
+
+				// is it a valid entry (check if it's empty, check if it matches any tags
+				console.log(val);
+
+				const tags = getTags();
+				const tagsKeys = Object.keys(tags);
+				for (let i = 0; i < tagsKeys.length; i++) {
+					if (val.target.value === makeTagOption(tags[tagsKeys[i]])) {
+						// TODO: make sure this tag isn't already attached
+
+						// then this is the one that was selected, let's add it.
+						const newTagElement = makeTagHTML(tags[tagsKeys[i]]);
+
+						// add in the close button
+						newTagElement.append(constructRemoveTagButton());
+
+						// place at the very end
+						val.target.parentElement.append(newTagElement);
+						break;
+					}
+				}
 			}
 			this.after(addInput);
 
@@ -190,15 +221,7 @@ function constructEditTagsButton() {
 			for (let i = 0; i < siblings.length; i++) {
 
 				if (siblings[i].classList.contains("angeldots-tag")) {
-					const removeTagButton = document.createElement("button");
-					removeTagButton.classList.add("angeldots-removeTagButton");
-					removeTagButton.innerHTML = "<img src='" +
-						chrome.runtime.getURL("img/close.svg") +
-						"' alt='Remove Tag'/>";
-					removeTagButton.onclick = function() {
-						this.parentElement.remove();
-					}
-					siblings[i].append(removeTagButton);
+					siblings[i].append(constructRemoveTagButton());
 				}
 			}
 
