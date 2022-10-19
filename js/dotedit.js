@@ -42,8 +42,15 @@ function getAssignments() {
 	return assignments;
 }
 
-function makeTagHTML(tagInfo) {
+function updateAssignments(id, tagIDs) {
+	assignments[id] = tagIDs;
+	console.log(assignments);
+}
+
+function constructTagElement(tagID) {
+	let tagInfo = getTags()[tagID];
 	let ele = document.createElement("span");
+	ele.setAttribute("data-tag-id", tagID);
 	ele.classList.add("angeldots-tag");
 	if (tagInfo["shortName"]) {
 		ele.innerText = tagInfo["shortName"];
@@ -62,7 +69,7 @@ function makeTagHTML(tagInfo) {
 function constructMatchTags(match32) {
 	let tagElements = [];
 	if (match32 in getAssignments()) {
-		tagElements = getAssignments()[match32].map(function(value) {return makeTagHTML(getTags()[value])});
+		tagElements = getAssignments()[match32].map(function(value) {return constructTagElement(value)});
 	}
 	return tagElements;
 }
@@ -80,11 +87,11 @@ function constructMatchTags(match32) {
  * 6) add tag assignment
  *   a) DONE - Add input with dropdown / autocomplete
  *   b) have dropdowns be from tags
- *
- *   DONE up to here.
- *
  *   c) add tag info once selected
  * 7) save tag assignment to JSON
+ *
+ * DONE up to here.
+ *
  * 8) save tag assignment to chrome.sync
  * 9) refactor tag assignment:
  *   a) break down into smaller functions
@@ -169,6 +176,7 @@ function constructEditTagsButton() {
 
 		let siblings = this.parentElement.children;
 
+		// EDIT
 		if (this.classList.contains("angeldots-editTagsButton")) {
 			// remove it, replace it, and do work.
 			editTagsButton.classList.remove("angeldots-editTagsButton");
@@ -204,7 +212,7 @@ function constructEditTagsButton() {
 						// TODO: make sure this tag isn't already attached
 
 						// then this is the one that was selected, let's add it.
-						const newTagElement = makeTagHTML(tags[tagsKeys[i]]);
+						const newTagElement = constructTagElement(tagsKeys[i]);
 
 						// add in the close button
 						newTagElement.append(constructRemoveTagButton());
@@ -225,7 +233,7 @@ function constructEditTagsButton() {
 				}
 			}
 
-		} else {
+		} else { // SAVE
 			editTagsButton.classList.remove("angeldots-saveTagsButton");
 			editTagsButton.classList.add("angeldots-editTagsButton");
 
@@ -239,8 +247,12 @@ function constructEditTagsButton() {
 			}
 
 			// find its siblings, delete all the x buttons
+
+			let acceptedTagIDs = [];
+
 			for (let i = 0; i < siblings.length; i++) {
 				if (siblings[i].classList.contains("angeldots-tag")) {
+					acceptedTagIDs.push(siblings[i].getAttribute("data-tag-id"));
 					for (let j = 0; j < siblings[i].children.length; j++) {
 						if (siblings[i].children[j].classList.contains("angeldots-removeTagButton")) {
 							siblings[i].children[j].remove();
@@ -248,10 +260,16 @@ function constructEditTagsButton() {
 					}
 				} else if (siblings[i].classList.contains("angeldots-addInput")) {
 					siblings[i].remove();
+				} else if (siblings[i].classList.contains("angeldots-datalist")) {
+					siblings[i].remove();
 				}
 			}
 
 			// save the data
+			// TODO: redo the parentElement.parentElement link into ancestry.js
+			console.log(getMatchID(this.parentElement.parentElement));
+			console.log(acceptedTagIDs);
+			updateAssignments(getMatchID(this.parentElement.parentElement), acceptedTagIDs);
 		}
 	};
 	return editTagsButton;
