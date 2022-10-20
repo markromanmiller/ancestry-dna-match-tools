@@ -99,6 +99,97 @@ function constructRemoveTagButton() {
 	return removeTagButton;
 }
 
+function assignNewTag(val) {
+	const tags = getTags();
+	const tagsKeys = Object.keys(tags);
+	for (let i = 0; i < tagsKeys.length; i++) {
+		if (val.target.value === constructTagOption(tags[tagsKeys[i]])) {
+			// TODO: make sure this tag isn't already attached
+
+			const newTagElement = constructTagElement(tagsKeys[i]);
+			newTagElement.append(constructRemoveTagButton());
+			val.target.parentElement.append(newTagElement);
+			break;
+		}
+	}
+}
+
+function constructAddTagInput() {
+	let addInput = document.createElement("input");
+	addInput.setAttribute('list', "angeldots-datalist");
+	addInput.classList.add("angeldots-addInput");
+	addInput.onchange = assignNewTag;
+	return addInput;
+}
+
+function mutateForEdit(editTagsButton) {
+
+	let siblings = editTagsButton.parentElement.children;
+	// remove it, replace it, and do work.
+	editTagsButton.classList.remove("angeldots-editTagsButton");
+	editTagsButton.classList.add("angeldots-saveTagsButton");
+
+	// edit its image
+	for (let i = 0; i < editTagsButton.children.length; i++) {
+		let val = editTagsButton.children[i];
+		if (val.tagName.toLowerCase() === "img") {
+			val.src = chrome.runtime.getURL("img/check.svg");
+			val.alt = "Save Tags";
+		}
+	}
+
+	// place a datalist and an input element right after it
+	editTagsButton.after(constructDatalist());
+	editTagsButton.after(constructAddTagInput());
+
+	// find its siblings, and give them all (x) buttons
+	for (let i = 0; i < siblings.length; i++) {
+		if (siblings[i].classList.contains("angeldots-tag")) {
+			siblings[i].append(constructRemoveTagButton());
+		}
+	}
+}
+
+function mutateForSave(editTagsButton) {
+
+	// update class assignments
+	editTagsButton.classList.remove("angeldots-saveTagsButton");
+	editTagsButton.classList.add("angeldots-editTagsButton");
+
+	// edit image
+	for (let i = 0; i < editTagsButton.children.length; i++) {
+		let val = editTagsButton.children[i];
+		if (val.tagName.toLowerCase() === "img") {
+			val.src = chrome.runtime.getURL("img/wing.svg");
+			val.alt = "Edit Tags";
+		}
+	}
+
+	// find which tags were used
+	let acceptedTagIDs = [];
+
+	let siblings = editTagsButton.parentElement.children;
+	for (let i = 0; i < siblings.length; i++) {
+		if (siblings[i].classList.contains("angeldots-tag")) {
+			// remove the (x) and add it to the updated tags list
+			acceptedTagIDs.push(siblings[i].getAttribute("data-tag-id"));
+			for (let j = 0; j < siblings[i].children.length; j++) {
+				if (siblings[i].children[j].classList.contains("angeldots-removeTagButton")) {
+					siblings[i].children[j].remove();
+				}
+			}
+		} else if (siblings[i].classList.contains("angeldots-addInput")
+			|| siblings[i].classList.contains("angeldots-datalist")) {
+			// remove the extra elements that were added for editing
+			siblings[i].remove();
+		}
+	}
+
+	// save the data
+	// TODO: redo the parentElement.parentElement link into ancestry.js
+	updateAssignments(getMatchID(editTagsButton.parentElement.parentElement), acceptedTagIDs);
+}
+
 function constructEditTagsButton() {
 	const editTagsButton = document.createElement("button");
 	editTagsButton.classList.add("angeldots-editTagsButton");
@@ -107,97 +198,10 @@ function constructEditTagsButton() {
 		"' alt='Edit Tags'/>";
 
 	editTagsButton.onclick = function () {
-		// get all tags, and add in x-marks to them
-
-		let siblings = this.parentElement.children;
-
-		// EDIT
-		if (this.classList.contains("angeldots-editTagsButton")) {
-			// remove it, replace it, and do work.
-			editTagsButton.classList.remove("angeldots-editTagsButton");
-			editTagsButton.classList.add("angeldots-saveTagsButton");
-
-			// edit its image
-			for (let i = 0; i < this.children.length; i++) {
-				let val = this.children[i];
-				if (val.tagName.toLowerCase() === "img") {
-					val.src = chrome.runtime.getURL("img/check.svg");
-					val.alt = "Save Tags";
-				}
-			}
-
-			// place a form fill right after it
-
-			this.after(constructDatalist());
-
-			let addInput = document.createElement("input");
-			addInput.setAttribute('list', "angeldots-datalist");
-			addInput.classList.add("angeldots-addInput");
-			addInput.onchange = function(val) {
-
-				const tags = getTags();
-				const tagsKeys = Object.keys(tags);
-				for (let i = 0; i < tagsKeys.length; i++) {
-					if (val.target.value === constructTagOption(tags[tagsKeys[i]])) {
-						// TODO: make sure this tag isn't already attached
-
-						// then this is the one that was selected, let's add it.
-						const newTagElement = constructTagElement(tagsKeys[i]);
-
-						// add in the close button
-						newTagElement.append(constructRemoveTagButton());
-
-						// place at the very end
-						val.target.parentElement.append(newTagElement);
-						break;
-					}
-				}
-			}
-			this.after(addInput);
-
-			// find its siblings, and give them all (x) buttons
-			for (let i = 0; i < siblings.length; i++) {
-
-				if (siblings[i].classList.contains("angeldots-tag")) {
-					siblings[i].append(constructRemoveTagButton());
-				}
-			}
-
+		if (this.classList.contains("angeldots-editTagsButton")) { // EDIT
+			mutateForEdit(this);
 		} else { // SAVE
-			editTagsButton.classList.remove("angeldots-saveTagsButton");
-			editTagsButton.classList.add("angeldots-editTagsButton");
-
-			// edit its image
-			for (let i = 0; i < this.children.length; i++) {
-				let val = this.children[i];
-				if (val.tagName.toLowerCase() === "img") {
-					val.src = chrome.runtime.getURL("img/wing.svg");
-					val.alt = "Edit Tags";
-				}
-			}
-
-			// find its siblings, delete all the x buttons
-
-			let acceptedTagIDs = [];
-
-			for (let i = 0; i < siblings.length; i++) {
-				if (siblings[i].classList.contains("angeldots-tag")) {
-					acceptedTagIDs.push(siblings[i].getAttribute("data-tag-id"));
-					for (let j = 0; j < siblings[i].children.length; j++) {
-						if (siblings[i].children[j].classList.contains("angeldots-removeTagButton")) {
-							siblings[i].children[j].remove();
-						}
-					}
-				} else if (siblings[i].classList.contains("angeldots-addInput")) {
-					siblings[i].remove();
-				} else if (siblings[i].classList.contains("angeldots-datalist")) {
-					siblings[i].remove();
-				}
-			}
-
-			// save the data
-			// TODO: redo the parentElement.parentElement link into ancestry.js
-			updateAssignments(getMatchID(this.parentElement.parentElement), acceptedTagIDs);
+			mutateForSave(this);
 		}
 	};
 	return editTagsButton;
