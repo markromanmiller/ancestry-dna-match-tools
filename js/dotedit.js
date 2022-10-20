@@ -1,106 +1,39 @@
 
-// given a match32 string, pull out the relevant tags:
-
 /**
- * tag database structure:
- * 'assignments' : {
- *     '6987109ba0185ba...' : [0, 25, 77],
- *     ...
- * },
- * 'tags' : {
- *     0 : {
- *     	   'name' : 'MRCA 06 - GILE/STADELE',
- *         'short_name' : 'MRCA O5',
- *         'color' : '#FF00FF',
- *     }
- * }
+ * tags
+ * 1) display tag info (n matches, name, short name, color) in a table
+ * 2) edit tag info
+ * 3) make new tag
+ * 4) delete old tags
+ * 5) handle tag errors
+ *   a) too much storage error
+ *   b) duplicate tag names error
+ *   c) filter out already-assigned tags
+ * 6) refactor
+ * 7) some discoverable way to create a new tag
+ *
+ * features
+ * 1) hide ancestry tags?
+ * 2) hide some angel tags?
+ * 3) delete all data
+ * 4) handle multiple accounts
+ * 5) export all data in formats:
+ *   a) json
+ *   b) by person, listing tags
+ *   c) by tags, listing person
+ *   d) by ids vs. names
  */
 
-const tags = {
-	0 : {
-		"name" : "Test tag 01",
-		"shortName" : "",
-		"color" : "#ffaef1"
-	},
-	1 : {
-		"name" : "test tag 22",
-		"shortName" : "TT22",
-		"color" : "#000f2f"
-	}
-};
-
-function getTags() {
-	return tags;
-}
-
-const initialSyncStorage = {
-	"director": {
-		"assignments": [
-			"assignments0"
-		]
-	},
-	"assignments0" : {}
-}
-
-async function initializeChromeSyncStorage() {
-	await chrome.storage.sync.set(initialSyncStorage);
-}
-
-
-// In-page cache of the assignments dictionary
-let assignments;
-let syncData;
-let idsToAssignmentSlot = {};
-
-// function to call when page loads to pull chrome sync storage stuff (i'll need all of it basically)
-function loadChromeSyncStorage() {
-	chrome.storage.sync.get(null, function(items) {
-		if (!("director" in items)) {
-			initializeChromeSyncStorage();
-			syncData = initialSyncStorage;
-		} else {
-			syncData = items;
-		}
-		constructAssignments();
-	})
-}
-
-function constructAssignments() {
-	let newAssignments = {};
-	// let idsToAssignmentSlot = {};
-	for (let i = 0; i < syncData.director.assignments.length; i++) {
-		Object.assign(newAssignments, syncData[syncData.director.assignments[i]]);
-	}
-	assignments = newAssignments;
-}
-
-
-// Watch for changes to the user's options & apply them
-chrome.storage.onChanged.addListener((changes, area) => {
-	if (area === 'sync') {
-		for (let key in changes) {
-			syncData[key] = changes[key].newValue;
-		}
-		constructAssignments();
-	}
-});
-
-function updateAssignments(id, tagIDs) {
-	// assignments[id] = tagIDs;
-	// by default, use assignment0
-
-	let newAssignment0 = syncData["assignments0"];
-	newAssignment0[id] = tagIDs;
-
-	// do some unsaved data thing...
-	chrome.storage.sync.set({"assignments0" : newAssignment0});
-}
-
+// given a tagID, create the HTML element to represent that tag
 function constructTagElement(tagID) {
-	let tagInfo = getTags()[tagID];
-	let ele = document.createElement("span");
-	ele.setAttribute("data-tag-id", tagID);
+	const tagInfo = getTags()[tagID];
+
+	// basic HTML
+	const ele = document.createElement("span");
 	ele.classList.add("angeldots-tag");
+	ele.setAttribute("data-tag-id", tagID);
+
+	// populate and style
 	if (tagInfo["shortName"]) {
 		ele.innerText = tagInfo["shortName"];
 	} else {
@@ -111,10 +44,11 @@ function constructTagElement(tagID) {
 	if (relativeLuminanceW3C(tagInfo["color"]) < 0.5) {
 		ele.classList.add("lod");
 	}
-	// ele.style.color = textColor(tagInfo["color"]);
+
 	return ele;
 }
 
+// given a 32-character match string, create the relevant tag HTML elements
 function constructMatchTags(match32) {
 	let tagElements = [];
 	if (match32 in assignments) {
@@ -123,47 +57,8 @@ function constructMatchTags(match32) {
 	return tagElements;
 }
 
-// UI flow:
-// edit -> add x's, add [ form ] for new or add tag
-
-/**
- * tag assigment
- * 1) find where tags should go
- * 2) add in tag element
- * 3) add in tags
- * 4) open editing of tag assignment
- * 5) remove tag assignment
- * 6) add tag assignment
- *   a) DONE - Add input with dropdown / autocomplete
- *   b) have dropdowns be from tags
- *   c) add tag info once selected
- * 7) save tag assignment to JSON
- * 8) save tag assignment to chrome.sync
- *
- * DONE up to here.
- *
- * 9) refactor tag assignment
- *
- * tags
- * 1) display tag info (n matches, name, short name, color)
- * 2) edit tag info
- * 3) make new tag
- * 4) delete old tags
- * 5) handle tag errors
- *   a) too much storage error
- *   b) duplicate tag names error
- *   c) filter out already-assigned tags
- *
- * features
- * 1) hide ancestry tags?
- * 2) hide some angel tags?
- */
-
-// bad table for name, edit name, color, etc, and save button at the top?
-
-// with a button, open chrome.runtime.openOptionsPage
-
-function makeTagOption(tagInfo) {
+// given tag info, create the tag option element to fill in the datalist
+function constructTagOption(tagInfo) {
 	let result = tagInfo["name"];
 	if (tagInfo["shortName"]) {
 		result += " (" + tagInfo["shortName"] + ")";
@@ -171,8 +66,8 @@ function makeTagOption(tagInfo) {
 	return result;
 }
 
+// create a datalist for the 'add tag' dropdown'
 function constructDatalist() {
-
 	// TODO: filter out already-assigned tags
 
 	let dl = document.createElement("datalist");
@@ -182,7 +77,7 @@ function constructDatalist() {
 	const tags = getTags();
 	const opts = Object.keys(tags).map(val => {
 		const opt = document.createElement("option");
-		opt.value = makeTagOption(tags[val]);
+		opt.value = constructTagOption(tags[val]);
 		return opt;
 	});
 	dl.append(...opts);
@@ -190,6 +85,7 @@ function constructDatalist() {
 	return dl;
 }
 
+// Return a tag deletion button
 function constructRemoveTagButton() {
 	const removeTagButton = document.createElement("button");
 	removeTagButton.classList.add("angeldots-removeTagButton");
@@ -242,7 +138,7 @@ function constructEditTagsButton() {
 				const tags = getTags();
 				const tagsKeys = Object.keys(tags);
 				for (let i = 0; i < tagsKeys.length; i++) {
-					if (val.target.value === makeTagOption(tags[tagsKeys[i]])) {
+					if (val.target.value === constructTagOption(tags[tagsKeys[i]])) {
 						// TODO: make sure this tag isn't already attached
 
 						// then this is the one that was selected, let's add it.
