@@ -44,7 +44,7 @@ const initialSyncStorage = {
     "director": {
         "assignments": [
             "assignments0"
-        ]
+        ],
     },
     "assignments0" : {}
 }
@@ -83,6 +83,21 @@ function updateAssignments(id, tagIDs) {
 
     // do some unsaved data thing...
     chrome.storage.sync.set({"assignments0" : newAssignment0});
+}
+
+function removeTags(tagIDsToRemove) {
+    console.log("Removing...");
+    console.log(tagIDsToRemove);
+    let newAssignment0 = syncData["assignments0"];
+    for (let key in newAssignment0) {
+        const tmp = newAssignment0[key].filter(x => !(tagIDsToRemove.includes(x)));
+        console.log(newAssignment0[key]);
+        console.log(tmp);
+        newAssignment0[key] = tmp;
+
+    }
+    console.log(newAssignment0);
+    // chrome.storage.sync.set({"assignments0" : newAssignment0});
 }
 
 // Watch for changes to the user's options & apply them
