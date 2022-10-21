@@ -17,24 +17,11 @@
 
 // global variables that other scripts use:
 let assignments;
+let tags;
 
 // global variables this script uses:
 let syncData;
 let idsToAssignmentSlot = {};
-
-
-const tags = {
-    0 : {
-        "name" : "Test tag 01",
-        "shortName" : "",
-        "color" : "#ffaef1"
-    },
-    1 : {
-        "name" : "test tag 22",
-        "shortName" : "TT22",
-        "color" : "#000f2f"
-    }
-};
 
 function getTags() {
     return tags;
@@ -45,15 +32,19 @@ const initialSyncStorage = {
         "assignments": [
             "assignments0"
         ],
+        "tags":[
+            "tags0"
+        ]
     },
-    "assignments0" : {}
+    "assignments0" : {},
+    "tags0" : {}
 }
 
 async function initializeChromeSyncStorage() {
     await chrome.storage.sync.set(initialSyncStorage);
 }
 
-function loadChromeSyncStorage() {
+function loadChromeSyncStorage(extraCallback) {
     chrome.storage.sync.get(null, function(items) {
         if (!("director" in items)) {
             initializeChromeSyncStorage();
@@ -62,6 +53,10 @@ function loadChromeSyncStorage() {
             syncData = items;
         }
         constructAssignments();
+        constructTags();
+        if(extraCallback) {
+            extraCallback();
+        }
     });
 }
 
@@ -72,6 +67,12 @@ function constructAssignments() {
         Object.assign(newAssignments, syncData[syncData.director.assignments[i]]);
     }
     assignments = newAssignments;
+}
+
+function constructTags() {
+    let newTags = {};
+    Object.assign(newTags, syncData.tags0);
+    tags = newTags;
 }
 
 function updateAssignments(id, tagIDs) {
@@ -85,19 +86,25 @@ function updateAssignments(id, tagIDs) {
     chrome.storage.sync.set({"assignments0" : newAssignment0});
 }
 
-function removeTags(tagIDsToRemove) {
+function updateTags(newTags, callback) {
+
+    const oldTagIDs = Object.keys(tags);
+    const newTagIDs = Object.keys(newTags);
+    const tagIDsToRemove = oldTagIDs.filter(v => !(newTagIDs.includes(v)));
+
     console.log("Removing...");
     console.log(tagIDsToRemove);
     let newAssignment0 = syncData["assignments0"];
     for (let key in newAssignment0) {
-        const tmp = newAssignment0[key].filter(x => !(tagIDsToRemove.includes(x)));
-        console.log(newAssignment0[key]);
-        console.log(tmp);
-        newAssignment0[key] = tmp;
-
+        newAssignment0[key] = newAssignment0[key].filter(x => !(tagIDsToRemove.includes(x)));
     }
-    console.log(newAssignment0);
-    // chrome.storage.sync.set({"assignments0" : newAssignment0});
+
+    // tags = Object.assign({}, newTags);
+
+    chrome.storage.sync.set({
+        "assignments0" : newAssignment0,
+        "tags0" : newTags
+    }).then(callback);
 }
 
 // Watch for changes to the user's options & apply them
@@ -107,5 +114,6 @@ chrome.storage.onChanged.addListener((changes, area) => {
             syncData[key] = changes[key].newValue;
         }
         constructAssignments();
+        constructTags();
     }
 });

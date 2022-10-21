@@ -21,14 +21,10 @@ function deleteTag(event) {
 }
 
 function saveTagDefinitions() {
-    console.log("Saving tag definitions");
 
-    const oldTagIDs = Object.keys(tags);
     const newTagIDS = [];
-
     let nextBestTagID = 0;
-
-    // any tag id of -1 needs an assignment
+    const newTags = {};
 
     const tagdefs = document.getElementById("tagdefs");
     for (let i = 0; i < tagdefs.children.length; i++) {
@@ -47,25 +43,14 @@ function saveTagDefinitions() {
         }
         newTagIDS.push(tagID.toString());
         console.log(row);
-        tags[tagID] = {
+        newTags[tagID] = {
             "name": row.children[1].children[0].value,
             "shortName": row.children[2].children[0].value,
             "color": row.children[0].children[0].value
         }
     }
-    console.log("New and old!");
-    console.log(oldTagIDs);
-    console.log(newTagIDS);
 
-    const tagsToRemove = oldTagIDs.filter(v => !(newTagIDS.includes(v)));
-    removeTags(tagsToRemove);
-
-    // any missing tags need to be removed from all people.
-
-    console.log(tags);
-    console.log(assignments);
-
-    resetTagDefinitions();
+    updateTags(newTags, resetTagDefinitions);
 }
 
 function resetTagDefinitions() {
@@ -103,10 +88,13 @@ function constructAddTagRow() {
     return addTagRow;
 }
 
-loadChromeSyncStorage();
+loadChromeSyncStorage(populateTagTable);
 
 document.getElementById("savetag").onclick = saveTagDefinitions;
 document.getElementById("resettag").onclick = resetTagDefinitions;
+document.getElementById("deleteeverything").onclick = function() {
+    chrome.storage.sync.clear();
+};
 
 function populateTagTable() {
     let tagTable = document.getElementById("tagdefs");
@@ -118,7 +106,5 @@ function populateTagTable() {
     }
     tagTable.append(constructAddTagRow());
 }
-
-populateTagTable();
 
 // document.getElementById("copypastetextarea").value = JSON.stringify(tags, null, 2);
