@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bootstrap demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+</head>
+<body>
+<div class="container">
+    <h1 style="margin-top: 10px">DNA Match Extras for Ancestry</h1>
+    <p>provided by the community</p>
+    <div>
+        <h2>Tag Definitions</h2>
+        <table class="table" id="tagdefs">
+            <tr><th>Color</th><th>Full Name</th><th>Tag</th><th></th></tr>
+        </table>
+        <button class="btn btn-primary" id="savetag" disabled>Save</button>
+        <button class="btn btn-secondary" id="resettag" disabled>Reset</button>
+    </div>
+    <hr/>
+    <!--
+    <div>
+        <h2>Export Data</h2>
+        Coming soon...
+
+        <label for="copypastetextarea">Saved content</label>
+        <br><textarea id="copypastetextarea"></textarea>
+
+    </div>
+    -->
+
+</div>
+<script src="js/storage.js"></script>
+<script src="js/tagdefs.js"></script>
+</body>
+</html>
