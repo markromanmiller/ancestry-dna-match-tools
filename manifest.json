@@ -5,7 +5,7 @@
   "version": "0.1",
   "action": {
     "default_popup": "dots.html",
-    "default_icon": "img/hi_icon.png"
+    "default_icon": "img/icon_16.png"
   },
   "content_scripts": [
     {
