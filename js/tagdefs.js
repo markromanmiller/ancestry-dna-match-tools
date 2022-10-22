@@ -59,6 +59,12 @@ function resetTagDefinitions() {
     populateTagTable();
 }
 
+
+function showEdited(event) {
+    console.log(event.target);
+    event.target.classList.add("angeldots-modified");
+}
+
 function constructTagRow(tagID, tagInfo) {
     const tagRow = document.createElement("tr");
     tagRow.classList.add("tagRow");
@@ -66,6 +72,11 @@ function constructTagRow(tagID, tagInfo) {
     tagRow.innerHTML = "<td><input type='color' value='" + tagInfo["color"] +"'></td>" +
         "<td><input type='text' value='" + tagInfo["name"] + "'></td>" +
         "<td><input style='width:100px' type='text' value='" + tagInfo["shortName"] + "'></td>";
+
+    for (let i in [0, 1, 2]) {
+        console.log(tagRow.children[i].children[0]);
+        tagRow.children[i].children[0].oninput = showEdited;
+    }
 
     const deleteButton = document.createElement("td");
     deleteButton.innerHTML = "<button class='btn btn-outline-danger'><img src='" +
