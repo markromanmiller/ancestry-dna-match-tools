@@ -15,7 +15,7 @@ This extension is not yet submitted to the Chrome Extension store, so there is a
 
 1. Navigate to the [Github Releases page](https://github.com/markromanmiller/ancestry-dna-match-tools/releases) for the
 extension.
-2. Select the most recent release, and download the ZIP file.
+2. Select the most recent release, and download the source code ZIP file.
 3. Save the ZIP file to some location on your computer, and unzip the archive. Be sure to remember the location to which you unzipped the file.
 4. Open your Google Chrome browser (or other Chromium-based browser, such as Microsoft Edge or Brave).
 5. On the extensions page (chrome://extensions), look to the top right and enable "Developer Mode". This should make a few buttosn appear.

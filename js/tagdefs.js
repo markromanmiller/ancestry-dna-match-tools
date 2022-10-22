@@ -61,7 +61,6 @@ function resetTagDefinitions() {
 
 
 function showEdited(event) {
-    console.log(event.target);
     event.target.classList.add("angeldots-modified");
 }
 
@@ -74,7 +73,6 @@ function constructTagRow(tagID, tagInfo) {
         "<td><input style='width:100px' type='text' value='" + tagInfo["shortName"] + "'></td>";
 
     for (let i in [0, 1, 2]) {
-        console.log(tagRow.children[i].children[0]);
         tagRow.children[i].children[0].oninput = showEdited;
     }
 
